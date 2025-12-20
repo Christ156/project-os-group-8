@@ -14,11 +14,51 @@ void printResults(struct Process p[], int n, float totalWT, float totalTAT){
         printf("P%d\t%d\t%d\t%d\t%d\t%d\n",p[i].id, p[i].at, p[i].bt, p[i].ct, p[i].tat, p[i].wt);
     }
 
+    // TODO: Add Average Response Time
     printf("\nAverage Turnaround Time = %.2f", totalTAT /n);
     printf("\nAverage Waiting Time = %.2f\n", totalWT / n);
 }
 
-void sjfNonPreemptive(struct Process p[], int n){
+void fcfs(struct Process p[], int n) {
+    for(int i = 0; i < n-1; i++){
+        for(int j = 0; j < n-i-1; j++){
+            if(p[j].at > p[j+1].at){
+                struct Process temp = p[j];
+                p[j] = p[j+1];
+                p[j+1] = temp;
+            }
+        }
+    }
+
+    int currentTime = 0;
+    float totalWT = 0;
+    float totalTAT = 0;
+
+    printf("\n--- FCFS ---\n");
+    printf("Gantt Chart:\n");
+
+    for(int i = 0; i < n; i++){
+        if(currentTime < p[i].at){
+            printf("| IDLE (%d) ", p[i].at);
+            currentTime = p[i].at;
+        }
+
+        currentTime += p[i].bt;
+        p[i].ct = currentTime;
+        p[i].tat = p[i].ct - p[i].at;
+        p[i].wt = p[i].tat - p[i].bt;
+
+        totalWT += p[i].wt;
+        totalTAT += p[i].tat;
+
+        printf("| Process %d (%d) ", p[i].id, p[i].ct);
+    }
+    printf("|\n");
+
+    printResults(p, n, totalWT, totalTAT);
+}
+
+void sjf(struct Process p[], int n){
     int completed = 0;
     int currentTime = 0;
     float totalWT = 0;
@@ -68,46 +108,7 @@ void sjfNonPreemptive(struct Process p[], int n){
     printResults(p, n, totalWT, totalTAT);
 }
 
-void fcfs(struct Process p[], int n) {
-    for(int i = 0; i < n-1; i++){
-        for(int j = 0; j < n-i-1; j++){
-            if(p[j].at > p[j+1].at){
-                struct Process temp = p[j];
-                p[j] = p[j+1];
-                p[j+1] = temp;
-            }
-        }
-    }
-
-    int currentTime = 0;
-    float totalWT = 0;
-    float totalTAT = 0;
-
-    printf("\n--- FCFS ---\n");
-    printf("Gantt Chart:\n");
-
-    for(int i = 0; i < n; i++){
-        if(currentTime < p[i].at){
-            printf("| IDLE (%d) ", p[i].at);
-            currentTime = p[i].at;
-        }
-
-        currentTime += p[i].bt;
-        p[i].ct = currentTime;
-        p[i].tat = p[i].ct - p[i].at;
-        p[i].wt = p[i].tat - p[i].bt;
-
-        totalWT += p[i].wt;
-        totalTAT += p[i].tat;
-
-        printf("| Process %d (%d) ", p[i].id, p[i].ct);
-    }
-    printf("|\n");
-
-    printResults(p, n, totalWT, totalTAT);
-}
-
-void sjfPreemptive(struct Process p[], int n){
+void srt(struct Process p[], int n){
     int completed = 0;
     int currentTime = 0;
     float totalWT = 0;
@@ -119,7 +120,7 @@ void sjfPreemptive(struct Process p[], int n){
         p[i].done = 0;
     }
 
-    printf("\n--- SJF (preemptive / SRTF) ---\n");
+    printf("\n--- SRT (preemptive) ---\n");
     printf("Gantt Chart:\n");
 
     int lastProcess = -1;
@@ -182,7 +183,7 @@ void roundRobin(struct Process p[], int n, int tq) {
         p[i].done = 0;
     }
 
-    printf("\n--- Round Robin (Time Quantum = %d) ---\n", tq);
+    printf("\n--- Round Robin (Time Slice = %d) ---\n", tq);
     printf("Gantt Chart:\n");
 
     while (completed < n) {
@@ -253,11 +254,11 @@ int main(){
         if (option == 1) {
             fcfs(temp, n);
         }else if (option == 2) {
-            sjfNonPreemptive(temp, n);
+            sjf(temp, n);
         }else if (option == 3) {
-            sjfPreemptive(temp, n);
+            srt(temp, n);
         }else if (option == 4) {
-            printf("Enter Time Quantum: ");
+            printf("Enter Time Slice: ");
             scanf("%d", &tq);
             roundRobin(temp, n, tq);
         }else if (option == 5) {
