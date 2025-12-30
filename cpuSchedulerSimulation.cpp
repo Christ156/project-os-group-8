@@ -178,43 +178,69 @@ void roundRobin(struct Process p[], int n, int tq) {
     float totalWT = 0, totalTAT = 0;
 
     int remainingBT[n];
+    bool inQueue[n];
+    int queue[n * 10];
+    int head = 0, tail = 0;
+
+	//Inisialisasi
     for (int i = 0; i < n; i++) {
         remainingBT[i] = p[i].bt;
+        inQueue[i] = false;
         p[i].done = 0;
     }
 
-    printf("\n--- Round Robin (Time Slice = %d) ---\n", tq);
+    for (int i = 0; i < n; i++) {
+        if (p[i].at <= currentTime) {
+            queue[tail++] = i;
+            inQueue[i] = true;
+        }
+    }
+
+    printf("\n--- Round Robin (Time Quantum = %d) ---\n", tq);
     printf("Gantt Chart:\n");
 
     while (completed < n) {
-        bool foundProcess = false;
-
-        for (int i = 0; i < n; i++) {
-            if (remainingBT[i] > 0 && p[i].at <= currentTime) {
-                foundProcess = true;
-
-                if (remainingBT[i] > tq) {
-                    printf("| Process %d (%d) ", p[i].id, currentTime + tq);
-                    currentTime += tq;
-                    remainingBT[i] -= tq;
-                } else {
-                    printf("| Process %d (%d) ", p[i].id, currentTime + remainingBT[i]);
-                    currentTime += remainingBT[i];
-                    remainingBT[i] = 0;
-                    p[i].ct = currentTime;
-                    p[i].tat = p[i].ct - p[i].at;
-                    p[i].wt = p[i].tat - p[i].bt;
-                    completed++;
-
-                    totalWT += p[i].wt;
-                    totalTAT += p[i].tat;
+        if (head == tail) {
+            printf("| IDLE (%d) ", currentTime + 1);
+            currentTime++;
+            for (int i = 0; i < n; i++) {
+                if (p[i].at <= currentTime && !inQueue[i]) {
+                    queue[tail++] = i;
+                    inQueue[i] = true;
                 }
+            }
+            continue;
+        }
+
+        int i = queue[head++];
+        
+        int executeTime = (remainingBT[i] > tq) ? tq : remainingBT[i];
+        
+        int startTime = currentTime;
+        currentTime += executeTime;
+        remainingBT[i] -= executeTime;
+
+        printf("| P%d (%d) ", p[i].id, currentTime);
+
+        for (int j = 0; j < n; j++) {
+            if (!inQueue[j] && p[j].at <= currentTime && p[j].at > startTime) {
+                queue[tail++] = j;
+                inQueue[j] = true;
             }
         }
 
-        if (!foundProcess) {
-            printf("| IDLE (%d) ", currentTime + 1);
-            currentTime++;
+        if (remainingBT[i] > 0) {
+            queue[tail++] = i;
+        } else {
+            // Jika proses selesai
+            p[i].ct = currentTime;
+            p[i].tat = p[i].ct - p[i].at;
+            p[i].wt = p[i].tat - p[i].bt;
+            p[i].done = 1;
+            completed++;
+
+            totalWT += p[i].wt;
+            totalTAT += p[i].tat;
         }
     }
 
